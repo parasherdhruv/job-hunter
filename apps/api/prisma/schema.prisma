@@ -1,3 +1,7 @@
+// Autonomous Job Hunter — Phase 1 schema
+// Single-user job-search application: candidate profile, jobs, matching.
+// Future phases (discovery connectors, notifications) extend this schema.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -32,40 +36,71 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
+/// The single authenticated user. Phase 1 supports exactly one account.
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions Session[]
+}
+
+/// Server-side session. Only a hash of the token is stored so a database leak
+/// cannot be replayed as a live session.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model CandidateProfile {
   id                 String   @id @default("default")
+  name               String?
   headline           String?
-  yearsExperience    Float    @default(4)
-  targetMinLpa       Float?
-  targetMaxLpa       Float?
+  yearsExperience    Float    @default(0)
+  skills             String[] @default([])
+  preferredTitles    String[] @default([])
   preferredLocations String[] @default([])
   remoteOpen         Boolean  @default(true)
-  skills             String[] @default([])
+  targetMinLpa       Float?
+  targetMaxLpa       Float?
+  resumeFileName     String?
   resumeText         String?
   updatedAt          DateTime @updatedAt
   createdAt          DateTime @default(now())
 }
 
 model Job {
-  id          String       @id @default(cuid())
+  id          String            @id @default(cuid())
   title       String
   company     String
   location    String?
-  workMode    WorkMode     @default(UNKNOWN)
+  workMode    WorkMode          @default(UNKNOWN)
   description String
-  skills      String[]     @default([])
+  skills      String[]          @default([])
   minLpa      Float?
   maxLpa      Float?
-  source      JobSource    @default(MANUAL)
-  sourceUrl   String       @unique
+  source      JobSource         @default(MANUAL)
+  sourceUrl   String            @unique
   externalId  String?
   postedAt    DateTime?
-  expiresAt   DateTime?
   status      ApplicationStatus @default(SAVED)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([createdAt])
   @@index([company])
   @@index([status])
+  @@index([workMode])
+  @@index([minLpa, maxLpa])
+  @@index([title])
 }
