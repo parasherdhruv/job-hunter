@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkMode {
+  ONSITE
+  HYBRID
+  REMOTE
+  UNKNOWN
+}
+
+enum JobSource {
+  MANUAL
+  COMPANY_SITE
+  API
+  RSS
+  OTHER
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+model CandidateProfile {
+  id                 String   @id @default("default")
+  headline           String?
+  yearsExperience    Float    @default(4)
+  targetMinLpa       Float?
+  targetMaxLpa       Float?
+  preferredLocations String[] @default([])
+  remoteOpen         Boolean  @default(true)
+  skills             String[] @default([])
+  resumeText         String?
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+}
+
+model Job {
+  id          String       @id @default(cuid())
+  title       String
+  company     String
+  location    String?
+  workMode    WorkMode     @default(UNKNOWN)
+  description String
+  skills      String[]     @default([])
+  minLpa      Float?
+  maxLpa      Float?
+  source      JobSource    @default(MANUAL)
+  sourceUrl   String       @unique
+  externalId  String?
+  postedAt    DateTime?
+  expiresAt   DateTime?
+  status      ApplicationStatus @default(SAVED)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([createdAt])
+  @@index([company])
+  @@index([status])
+}
